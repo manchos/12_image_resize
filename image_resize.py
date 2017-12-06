@@ -5,9 +5,6 @@ import logging
 from collections import namedtuple
 logging.basicConfig(level=logging.INFO)
 
-
-
-
 def resize_image(img_path='unsplash_01.jpg', new_img_path = 'unsplash_02.jpg', width=300, height=220):
     image = Image.open(img_path)
     if width and height:
@@ -159,12 +156,31 @@ if __name__ == '__main__':
 
         print(new_image.size)
 
-        print(set_default_file_name(image, new_image))
+        # print(set_default_file_name(image, new_image))
     else:
         logging.error('Check the file path: {}. Program work with jpg and png format'.format(cli_args.img_path))
 
+    if cli_args.output_path:
+        output = cli_args.output_path
+        if os.path.isdir(output):
+            new_image_name = set_default_file_name(image, new_image)
+            real_output_dir_path = output
+            print(os.path.join(output, new_image_name))
+            # return  os.path.join(output, new_image_name)
+        else:
+            if os.path.split(output)[0] == os.path.split(image.filename)[0] or os.path.isdir(os.path.split(output)[0]):
+                if check_file_extension(os.path.split(output)[1]):
+                    print(os.path.split(output)[1])
+                    print(output)
+                else:
+                    logging.error('Program work with jpg and png format')
+                    #return output
+    else:
+        print(os.path.join(os.path.dirname(image.filename), set_default_file_name(image, new_image)))
 
-    set_new_file_path(image, new_image, new_file_path='')
+
+            # print(os.path.split(output)[1])
+    # set_new_file_path(image, new_image, new_file_path='')
 
     print(cli_args)
     # resize_image()
