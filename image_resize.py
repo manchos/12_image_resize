@@ -25,7 +25,7 @@ def resize_image(img_path='unsplash_01.jpg', new_img_path = 'unsplash_02.jpg', w
 
 
 def set_new_file_path(image, new_image, new_file_path=''):
-    if not new_file_path:
+    if new_file_path != image:
         if os.path.exist(new_file_path):
             if os.path.isfile(new_file_path):
                 return new_file_path
@@ -41,9 +41,14 @@ def set_new_file_path(image, new_image, new_file_path=''):
 
 def set_default_file_name(image, new_image):
     width, height = new_image.size
-    file_extension = os.path.split(image.filename)[0].split('.')[-1]
+    file_extension = os.path.split(image.filename)[1].split('.')[-1]
     return '{}__{}x{}.{}'.format(os.path.basename('.'.join(image.filename.split('.')[:-1])),
                                  width, height, file_extension)
+
+
+def check_file_extension(file_path, file_extension_tuple = ('jpg', 'png')):
+    file_extension = os.path.split(file_path)[1].split('.')[-1]
+    return file_extension in file_extension_tuple
 
 
 def set_default_path(file_path):
@@ -83,26 +88,14 @@ def height_matches_aspect_ratio(image, new_width, new_height):
         return True
 
 
-def check_file_extension(file_path):
-    file_extension = os.path.split(file_path)[0].split('.')[-1]
-    return file_extension in ('jpg', 'png')
-
-
 def set_cli_argument_parse():
-    '''
-width - ширина результирующей картинки, height - её высота, scale - во сколько раз увеличить изображение
-(может быть меньше 1), output - куда класть результирующий файл.
-    '''
     parser = argparse.ArgumentParser(description="Displays information about 20 random curses from coursera.org")
     parser.add_argument('img_path', help='set path to image file to resize')
     parser.add_argument('-width', '--width', default=0, type=int, dest="width", help='set image width')
-    parser.add_argument('-height', '--height', default=0, type=int, dest="height", help='set image height')
-
-    os.path.isfile(parser.parse_args().img_path)
-
-    parser.add_argument('-output', '--output', default=os.path.dirname(parser.parse_args().img_path),
-                        dest="output_path", help='set image path to save')
     parser.add_argument('-scale', '--scale', default=1, dest="scale", help='set image height')
+    parser.add_argument('-height', '--height', default=0, type=int, dest="height", help='set image height')
+    parser.add_argument('-output', '--output', default='', dest="output_path", help='set image path to save')
+
 
     # parser = argparse.ArgumentParser(description="Displays information about 20 random curses from coursera.org")
     # parser.add_argument("-cachetime", "--cache_time", default=2400, type=int,
@@ -119,46 +112,59 @@ def validate_cli_arguments(arguments):
     pass
 
 
+def set_image_with_new_size(image, scale, width, height, default_width='200'):
+    if (width, height) == (0, 0):
+        width = default_width
+        logging.info('Set the default value of image width {}px'.format(default_width))
 
+    if scale == 1:
+        if 0 in (width, height):
+            if height != 0:
+                width = int(round(height * (image.size[0] / image.size[1])))
+            else:
+                height = get_valid_height(image, width)
+        else:
+            if not height_matches_aspect_ratio(image, width, height) and not height_yes_no_dialog():
+                height = get_valid_height(image, width)
+
+        new_image = image.resize((width, height))
+    else:
+        if height or width:
+            logging.error('The scale x{} was defined!.\n Resize is not possible!'.format(scale))
+            raise Exception("Resize is not possible!")
+        else:
+            if check_scale(scale):
+                new_image = image.resize((width*scale, height*scale))
+            else:
+                logging.error('The scale x{} is wrong!.\n Resize is not possible!'.format(scale))
+                raise Exception("Resize is not possible!")
+    return new_image
+
+def set_ouput_path(image, output_path):
+
+    pass
 
 
 if __name__ == '__main__':
     cli_args = set_cli_argument_parse()
-    image_info_class = namedtuple('ImgClass', ['image', 'aspect_ratio', 'filepath', 'filename', 'filetype'])
+    # image_info_class = namedtuple('ImgClass', ['image', 'aspect_ratio', 'filepath', 'filename', 'filetype'])
 
-    if os.path.isfile(cli_args.img_path) and check_file_extension(cli_args.img_path):
+    print(check_file_extension(cli_args.img_path))
+
+    if os.path.isfile(cli_args.img_path) and check_file_extension(cli_args.img_path, ('jpg', 'png')):
+
         image = Image.open(cli_args.img_path)
 
-        if cli_args.scale == 1:
-            if cli_args.height and not cli_args.width:
-                image.thumbnail((cli_args.height, cli_args.height))
+        new_image = set_image_with_new_size(image, cli_args.scale, cli_args.width, cli_args.height)
 
-            if cli_args.width and not cli_args.height:
-                image.thumbnail((cli_args.width, cli_args.width))
+        print(new_image.size)
 
-            if cli_args.width and cli_args.height:
-                if height_matches_aspect_ratio(image, cli_args.width, cli_args.height):
-                    image.resize((cli_args.width, cli_args.height))
-                else:
-                    if height_yes_no_dialog():
-                        # yes
-                        image.resize((cli_args.width, cli_args.height))
-                    else:
-                        # no
-                        image.resize((cli_args.width, get_valid_height(image, cli_args.width)))
-        else:
-            if cli_args.height or cli_args.width:
-                logging.error('The scale x{} was defined!.\n Resize is not possible!'.format(cli_args.scale))
-                raise Exception("Resize is not possible!")
-            else:
-                if check_scale(cli_args.scale):
-                    image.resize((cli_args.width, cli_args.height))
-                else:
-                    logging.error('The scale x{} is wrong!.\n Resize is not possible!'.format(cli_args.scale))
-                    raise Exception("Resize is not possible!")
+        print(set_default_file_name(image, new_image))
+    else:
+        logging.error('Check the file path: {}. Program work with jpg and png format'.format(cli_args.img_path))
 
 
-
+    set_new_file_path(image, new_image, new_file_path='')
 
     print(cli_args)
     # resize_image()
