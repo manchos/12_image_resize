@@ -13,9 +13,9 @@ def set_default_file_name(image, new_image):
                                  width, height, file_extension)
 
 
-def check_file_extension(file_path, file_extension_tuple = ('jpg', 'png')):
+def check_file_extension(file_path, img_formats_tuple):
     file_extension = os.path.split(file_path)[1].split('.')[-1]
-    return file_extension in file_extension_tuple
+    return file_extension in img_formats_tuple
 
 
 def set_default_path(file_path):
@@ -56,7 +56,7 @@ def set_cli_argument_parse():
     return parser.parse_args()
 
 
-def check_source_img_path(img_path, img_formats=('jpg', 'png')):
+def check_source_img_path(img_path, img_formats):
     if os.path.isfile(img_path) and check_file_extension(img_path, img_formats):
         return True
     else:
@@ -64,7 +64,7 @@ def check_source_img_path(img_path, img_formats=('jpg', 'png')):
         return False
 
 
-def check_size(width, height):
+def valid_size(width, height):
     if all([type(size) is int and size >= 0 for size in (width, height)]):
         return True
     else:
@@ -79,36 +79,31 @@ def valid_scale(scale):
         raise argparse.ArgumentTypeError('The scale may be fractional number and > 0!')
 
 
-def set_valid_image_with_new_size(image, scale, width, height, default_width=200):
-    if not check_size(width, height):
+def set_valid_image_with_new_size(image, scale, width, height, default_width):
+    if not valid_size(width, height):
         return None
-
-    if (width, height) == (0, 0) and scale == 1:
-        width = default_width
-        height = get_valid_height(image, width)
-        logging.info('Set the default value of image width {}px'.format(default_width))
-
-    if 0 in (width, height):
-        if height != 0:
-            width = int(round(height * (image.size[0] / image.size[1])))
-        else:
+    if scale == 1:
+        if (width, height) == (0, 0):
+            width = default_width
             height = get_valid_height(image, width)
-    elif not height_matches_aspect_ratio(image, width, height) and not height_yes_no_dialog():
-        height = get_valid_height(image, width)
-
-    if scale != 1:
+            logging.info('Set the default value of image {}px'.format(default_width))
+        if 0 in (width, height):
+            if height != 0:
+                width = int(round(height * (image.size[0] / image.size[1])))
+            else:
+                height = get_valid_height(image, width)
+        elif not height_matches_aspect_ratio(image, width, height) and not height_yes_no_dialog():
+            height = get_valid_height(image, width)
+    else:
         if height or width:
             logging.error('The scale x{} was defined!.\n Resize is not possible!'.format(scale))
             return None
         else:
-            width = image.size[0]
-            height = image.size[1]
-
-    new_image = image.resize((int(round(width*scale)), int(round(height * scale))))
-    return new_image
+            width, height = image.size
+    return image.resize((int(round(width*scale)), int(round(height * scale))))
 
 
-def set_valid_ouput_path(image, output_path):
+def set_valid_ouput_path(image, output_path, img_formats):
     if output_path:
         if os.path.isdir(output_path):
             new_image_name = set_default_file_name(image, new_image)
@@ -116,27 +111,25 @@ def set_valid_ouput_path(image, output_path):
         else:
             if os.path.split(output_path)[0] == os.path.split(image.filename)[0] or \
                     os.path.isdir(os.path.split(output_path)[0]):
-                if check_file_extension(os.path.split(output_path)[1]):
+                if check_file_extension(os.path.split(output_path)[1], img_formats):
                     return output_path
                 else:
-                    logging.error('Program work with jpg and png format')
+                    logging.error('Program work with {} format'.format(*img_formats))
                     return None
     else:
         return os.path.join(os.path.dirname(image.filename), set_default_file_name(image, new_image))
 
 
 if __name__ == '__main__':
-    IMG_FORMATS = ('jpg', 'png')
-    DEFAULT_WIDTH = 200
     cli_args = set_cli_argument_parse()
-    # image_info_class = namedtuple('ImgClass', ['image', 'aspect_ratio', 'filepath', 'filename', 'filetype'])
 
-    if check_source_img_path(cli_args.img_path, IMG_FORMATS):
+    if check_source_img_path(cli_args.img_path, img_formats=('jpg', 'png')):
         image = Image.open(cli_args.img_path)
-        new_image = set_valid_image_with_new_size(image, cli_args.scale, cli_args.width, cli_args.height, DEFAULT_WIDTH)
+        new_image = set_valid_image_with_new_size(image, cli_args.scale, cli_args.width, cli_args.height,
+                                                  default_width=200)
         if new_image is not None:
             try:
-                output_path = set_valid_ouput_path(image, cli_args.output_path)
+                output_path = set_valid_ouput_path(image, cli_args.output_path, img_formats=('jpg', 'png'))
                 new_image.save(output_path)
             except (IOError, ValueError) as exc:
                 logging.error('{} File could not be written.'.format(exc))
