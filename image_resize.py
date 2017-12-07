@@ -79,21 +79,26 @@ def valid_scale(scale):
         raise argparse.ArgumentTypeError('The scale may be fractional number and > 0!')
 
 
+def resize_image(image, width, height, default_width):
+    if (width, height) == (0, 0):
+        width = default_width
+        height = get_valid_height(image, width)
+        logging.info('Set the default value of image {}px'.format(default_width))
+    if 0 in (width, height):
+        if height != 0:
+            width = int(round(height * (image.size[0] / image.size[1])))
+        else:
+            height = get_valid_height(image, width)
+    elif not height_matches_aspect_ratio(image, width, height) and not height_yes_no_dialog():
+        height = get_valid_height(image, width)
+    return width, height
+
+
 def set_valid_image_with_new_size(image, scale, width, height, default_width):
     if not valid_size(width, height):
         return None
     if scale == 1:
-        if (width, height) == (0, 0):
-            width = default_width
-            height = get_valid_height(image, width)
-            logging.info('Set the default value of image {}px'.format(default_width))
-        if 0 in (width, height):
-            if height != 0:
-                width = int(round(height * (image.size[0] / image.size[1])))
-            else:
-                height = get_valid_height(image, width)
-        elif not height_matches_aspect_ratio(image, width, height) and not height_yes_no_dialog():
-            height = get_valid_height(image, width)
+        width, height = resize_image(image, width, height, default_width)
     else:
         if height or width:
             logging.error('The scale x{} was defined!.\n Resize is not possible!'.format(scale))
