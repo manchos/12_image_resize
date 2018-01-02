@@ -37,14 +37,13 @@ def apply_aspect_ratio_to_height_dialog():
 
 
 def get_valid_height(image, new_width, new_height=0,
-                     func_apply_aspect_ratio=apply_aspect_ratio_to_height_dialog):
+                     apply_aspect_ratio=True):
     aspect_ratio = image.size[1] / image.size[0]
     valid_height = int(round(aspect_ratio * new_width))
     if not new_height:
         return valid_height
     # height not matches aspect ratio:
     if new_height != valid_height:
-        apply_aspect_ratio = func_apply_aspect_ratio()
         if not apply_aspect_ratio:
             return new_height
         return valid_height
@@ -156,8 +155,8 @@ if __name__ == '__main__':
         if not validating:
             print(message)
         else:
-            valid_height = get_valid_height(image, width, height,
-                                            apply_aspect_ratio_to_height_dialog)
+            valid_height = get_valid_height(
+                image, width, height, apply_aspect_ratio=apply_aspect_ratio_to_height_dialog())
             new_image = resize_image(image, scale, width, valid_height, default_width=200)
             try:
                 output_path = set_valid_ouput_path(
