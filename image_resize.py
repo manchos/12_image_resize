@@ -146,7 +146,8 @@ if __name__ == '__main__':
     img_formats = ('.jpg', '.jpeg', '.png')
 
     if not check_source_img_path(cli_args.img_path, img_formats=img_formats):
-        print('The specified file extension is not supported. Use files with the file extension:{}'.
+        print('The specified file extension is not supported. '
+              'Use files with the file extension:{}'.
               format(', '.join(img_formats)))
     else:
         image = Image.open(cli_args.img_path)
