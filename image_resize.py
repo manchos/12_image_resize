@@ -111,12 +111,12 @@ def set_valid_ouput_path(image, output_path, img_formats):
 def sizes_validating(scale, width, height):
     result, message = True, ''
     if not valid_size(width, height):
-        result = False
+        valid = False
         message = 'Sizes must be positive numbers.'
     if scale > 1 and (height or width):
-        result = False
+        valid = False
         message += 'The scale x{} was defined!.\n Resize is not possible! '.format(scale)
-    return result, message
+    return valid, message
 
 
 def parse_args():
@@ -134,11 +134,16 @@ if __name__ == '__main__':
     cli_args = parse_args()
     img_formats = ('.jpg', '.jpeg', '.png')
 
-    if check_source_img_path(cli_args.img_path, img_formats=img_formats):
+    if not check_source_img_path(cli_args.img_path, img_formats=img_formats):
+        print('The specified file extension is not supported. Use files with the file extension:{}'.
+              format(', '.join(img_formats)))
+    else:
         image = Image.open(cli_args.img_path)
         scale, width, height = cli_args.scale, cli_args.width, cli_args.height
         validating, message = sizes_validating(scale, width, height)
-        if validating:
+        if not validating:
+            print(message)
+        else:
             if (width and height) and not height_matches_aspect_ratio(image, width, height) \
                     and not height_yes_no_dialog():
                 height = get_valid_height(image, width)
@@ -150,8 +155,3 @@ if __name__ == '__main__':
                 print('{} File {} could not be written.'.format(exc, cli_args.output_path))
             else:
                 print('file save in {} '.format(output_path))
-        else:
-            print(message)
-    else:
-        print('The specified file extension is not supported. Use files with the file extension:{}'.
-              format(', '.join(img_formats)))
