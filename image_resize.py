@@ -9,7 +9,8 @@ logging.basicConfig(level=logging.CRITICAL)
 def set_default_file_name(image, new_image):
     width, height = new_image.size
     file_extension = image.format.lower()
-    return '{}__{}x{}.{}'.format(os.path.splitext(os.path.split(image.filename)[1])[0], width, height, file_extension)
+    return '{}__{}x{}.{}'.format(
+        os.path.splitext(os.path.split(image.filename)[1])[0], width, height, file_extension)
 
 
 def check_file_extension(file_path, img_formats_tuple):
@@ -26,22 +27,27 @@ def scale_image_size(image, new_scale):
     return int(round(image.size[0] * new_scale)), int(round(image.size[1] * new_scale))
 
 
-def get_valid_height(image, new_width):
-    aspect_ratio = image.size[1] / image.size[0]
-    return int(round(aspect_ratio * new_width))
-
-
-def height_yes_no_dialog():
-    enter_height = input('The height does not match to the aspect ratio. To enter this value? (yes, no)')
+def apply_aspect_ratio_to_height_dialog():
+    enter_height = \
+        input('The height does not match to the aspect ratio. To enter this value? (yes, no)')
     if enter_height in ('', 'yes'):
         return True
     elif enter_height == 'no':
         return False
 
 
-def height_matches_aspect_ratio(image, new_width, new_height):
+def get_valid_height(image, new_width, new_height=0,
+                     func_apply_aspect_ratio=apply_aspect_ratio_to_height_dialog):
     aspect_ratio = image.size[1] / image.size[0]
-    return new_height == int(round(aspect_ratio * new_width))
+    valid_height = int(round(aspect_ratio * new_width))
+    if not new_height:
+        return valid_height
+    # height not matches aspect ratio:
+    if new_height != valid_height:
+        apply_aspect_ratio = func_apply_aspect_ratio()
+        if not apply_aspect_ratio:
+            return new_height
+        return valid_height
 
 
 def check_source_img_path(img_path, img_formats):
@@ -105,28 +111,33 @@ def set_valid_ouput_path(image, output_path, img_formats):
                     logging.error('Program work with {} format'.format(*img_formats))
                     return None
     else:
-        return os.path.join(os.path.dirname(image.filename), set_default_file_name(image, new_image))
+        return os.path.join(os.path.dirname(image.filename),
+                            set_default_file_name(image, new_image))
 
 
 def sizes_validating(scale, width, height):
-    result, message = True, ''
+    is_valid, valid_message = True, ''
     if not valid_size(width, height):
-        valid = False
-        message = 'Sizes must be positive numbers.'
+        is_valid = False
+        valid_message = 'Sizes must be positive numbers.'
     if scale > 1 and (height or width):
-        valid = False
-        message += 'The scale x{} was defined!.\n Resize is not possible! '.format(scale)
-    return valid, message
+        is_valid = False
+        valid_message += 'The scale x{} was defined!.\n Resize is not possible! '.format(scale)
+    return is_valid, valid_message
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Displays information about 20 random curses from coursera.org")
+    parser = argparse.ArgumentParser(
+        description="Displays information about 20 random curses from coursera.org")
     parser.add_argument('img_path', help='set path to image file to resize')
-    parser.add_argument('-width', '--width', default=0, type=int, dest="width", help='set image width (integer>0)')
-    parser.add_argument('-height', '--height', default=0, type=int, dest="height", help='set image height (integer>0)')
+    parser.add_argument('-width', '--width', default=0, type=int, dest="width",
+                        help='set image width (integer>0)')
+    parser.add_argument('-height', '--height', default=0, type=int, dest="height",
+                        help='set image height (integer>0)')
     parser.add_argument('-scale', '--scale', default=1, type=valid_scale, dest="scale",
                         help='set image scale (fractional number > 0)')
-    parser.add_argument('-output', '--output', default='', dest="output_path", help='set image path to save')
+    parser.add_argument(
+        '-output', '--output', default='', dest="output_path", help='set image path to save')
     return parser.parse_args()
 
 
@@ -144,12 +155,12 @@ if __name__ == '__main__':
         if not validating:
             print(message)
         else:
-            if (width and height) and not height_matches_aspect_ratio(image, width, height) \
-                    and not height_yes_no_dialog():
-                height = get_valid_height(image, width)
-            new_image = resize_image(image, scale, width, height, default_width=200)
+            valid_height = get_valid_height(image, width, height,
+                                            apply_aspect_ratio_to_height_dialog)
+            new_image = resize_image(image, scale, width, valid_height, default_width=200)
             try:
-                output_path = set_valid_ouput_path(image, cli_args.output_path, img_formats=img_formats)
+                output_path = set_valid_ouput_path(
+                    image, cli_args.output_path, img_formats=img_formats)
                 new_image.save(output_path)
             except (IOError, ValueError, KeyError) as exc:
                 print('{} File {} could not be written.'.format(exc, cli_args.output_path))
