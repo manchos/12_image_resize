@@ -53,15 +53,20 @@ def get_valid_image_size(image, width, height, apply_aspect_ratio=True, default_
         height = int(round(aspect_ratio * width))
     elif height:
         width = int(round(height * image.size[0] / image.size[1]))
-    elif width and height:
-        aspect_ratio_height = int(round(aspect_ratio * width))
-        if height != aspect_ratio_height:
-            if callable(apply_aspect_ratio):
-                apply_aspect_ratio = apply_aspect_ratio()
-            if apply_aspect_ratio:
-                height = aspect_ratio_height
+    else:
+        width, height = resize_width_and_height(image, width, height,
+                                                apply_aspect_ratio=apply_aspect_ratio)
     return width, height
 
+
+def resize_width_and_height(image, width, height, apply_aspect_ratio=True):
+    aspect_ratio_height = int(round(image.size[1] / image.size[0] * width))
+    if height != aspect_ratio_height:
+        if callable(apply_aspect_ratio):
+            apply_aspect_ratio = apply_aspect_ratio()
+        if apply_aspect_ratio:
+            height = aspect_ratio_height
+    return width, height
 
 def resize_image(image, scale, width, height, apply_aspect_ratio=True, default_width=200):
     if scale == 1:
