@@ -10,12 +10,12 @@ The code is written for educational purposes. Training course for web-developers
 
 Run the script
 ```#!bash
-$ python image_resize.py IMAGE_PATH
+$ python image_resize.py IMAGE_PATH -width WIDTH
 
 
 optional arguments:
   -h, --help            show this help message and exit
-  -img_path IMG_PATH    set path to image file to resize
+  IMG_PATH              set path to image file to resize
   -width WIDTH          set image width (integer)
   -height HEIGHT        set image height (integer)
   -scale SCALE          set image scale (fractional number > 0)

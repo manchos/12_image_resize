@@ -51,25 +51,13 @@ def check_output_path(output_path, img_formats_set):
     return True
 
 
-def get_valid_image_size(image, width, height, apply_aspect_ratio=True, default_width=200):
-    aspect_ratio = image.size[1] / image.size[0]
-    if not width and not height:
-        width = default_width
-        height = int(round(aspect_ratio * width))
-        logging.info('Set the default width of image to {}px'.format(default_width))
-    elif width:
-        height = int(round(aspect_ratio * width))
-    elif height:
-        width = int(round(height * image.size[0] / image.size[1]))
-    else:
-        width, height = resize_width_and_height(image, width, height,
-                                                apply_aspect_ratio=apply_aspect_ratio)
-    return width, height
-
-
-def resize_width_and_height(image, width, height, apply_aspect_ratio=True):
+def get_valid_image_size(image, width, height, apply_aspect_ratio=True):
     aspect_ratio_height = int(round(image.size[1] / image.size[0] * width))
-    if height != aspect_ratio_height:
+    if width and height is None:
+        height = aspect_ratio_height
+    elif height and width is None:
+        width = int(round(image.size[0] / image.size[1] * height))
+    elif height != aspect_ratio_height:
         if callable(apply_aspect_ratio):
             apply_aspect_ratio = apply_aspect_ratio()
         if apply_aspect_ratio:
@@ -77,15 +65,15 @@ def resize_width_and_height(image, width, height, apply_aspect_ratio=True):
     return width, height
 
 
-def resize_image(image, args, apply_aspect_ratio=True, default_width=200):
+def resize_image(image, args, apply_aspect_ratio=True):
     scale, width, height, img_path = args.scale, args.width, args.height, args.img_path
     if scale is not None and (height or width):
-        raise argparse.Error('The scale x{} was defined!.\n '
+        raise argparse.ArgumentTypeError('The scale x{} was defined!.\n '
                              'Resize with the width and height is not possible!'.format(scale))
     if scale is None:
         scale = 1
         width, height = get_valid_image_size(
-            image, width, height, apply_aspect_ratio, default_width
+            image, width, height, apply_aspect_ratio
         )
     else:
         width, height = image.size
@@ -103,10 +91,10 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='save image with new size in output directory default file name obtain '
                     'from IMAGE_PATH like this: FILE_NAME__WIDTHxHEIGHT.FILE_EXTENSION')
-    parser.add_argument('-img_path', help='set path to image file to resize')
-    parser.add_argument('-width', '--width', default=0, type=validate_size, dest="width",
+    parser.add_argument('img_path', help='set path to image file to resize')
+    parser.add_argument('-width', '--width', default=None, type=validate_size, dest="width",
                         help='set image width (integer>0)')
-    parser.add_argument('-height', '--height', default=0, type=validate_size, dest="height",
+    parser.add_argument('-height', '--height', default=None, type=validate_size, dest="height",
                         help='set image height (integer>0)')
     parser.add_argument('-scale', '--scale', default=None, type=validate_scale, dest="scale",
                         help='set image scale (fractional number > 0)')
@@ -124,13 +112,11 @@ if __name__ == '__main__':
             not check_output_path(args.output_path, img_formats_set=img_formats)):
         print('Check the file path and file extension. Use files with the file extension:{}'.
               format(', '.join(img_formats)))
+    elif (args.scale, args.width, args.height) == (None, None, None):
+        print('For image resize you must enter values (-scale or -width or -height)')
     else:
         image = Image.open(args.img_path)
-        new_image = resize_image(
-            image, args,
-            apply_aspect_ratio=apply_aspect_ratio_to_height_dialog,
-            default_width=200
-        )
+        new_image = resize_image(image, args, apply_aspect_ratio=apply_aspect_ratio_to_height_dialog)
         try:
             new_image_name = get_default_image_name(image, new_image)
             output_path = set_ouput_image_path(new_image_name, args.output_path)
