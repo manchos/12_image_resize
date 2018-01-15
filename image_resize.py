@@ -82,6 +82,20 @@ def set_ouput_image_path(new_image_name, output_path):
         return os.path.join(os.path.dirname(image.filename), new_image_name)
 
 
+def check_valid_args(args):
+    if (not os.path.isfile(args.img_path) or
+            not check_file_extension(args.img_path, img_formats_set=img_formats) or
+            not check_output_path(args.output_path, img_formats_set=img_formats)):
+        print('Check the file path and file extension. Use files with the file extension:{}'.
+              format(', '.join(img_formats)))
+    elif (args.scale, args.width, args.height) == (None, None, None):
+        print('For image resize you must enter values (-scale or -width or -height)')
+    elif args.scale is not None and (args.height or args.width):
+        print('The scale x{} was defined!.\n Resize with the width and height is not possible!'.format(args.scale))
+    else:
+        return True
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description='save image with new size in output directory default file name obtain '
@@ -102,16 +116,7 @@ if __name__ == '__main__':
     args = parse_args()
     img_formats = {'.jpg', '.jpeg', '.png'}
 
-    if (not os.path.isfile(args.img_path) or
-            not check_file_extension(args.img_path, img_formats_set=img_formats) or
-            not check_output_path(args.output_path, img_formats_set=img_formats)):
-        print('Check the file path and file extension. Use files with the file extension:{}'.
-              format(', '.join(img_formats)))
-    elif (args.scale, args.width, args.height) == (None, None, None):
-        print('For image resize you must enter values (-scale or -width or -height)')
-    elif args.scale is not None and (args.height or args.width):
-        print('The scale x{} was defined!.\n Resize with the width and height is not possible!'.format(args.scale))
-    else:
+    if check_valid_args(args):
         image = Image.open(args.img_path)
         new_image = resize_image(image, args, apply_aspect_ratio=apply_aspect_ratio_to_height_dialog)
         try:
