@@ -51,8 +51,11 @@ def check_output_path(output_path, img_formats_set):
     return True
 
 
-def get_valid_image_size(image, width, height, apply_aspect_ratio=True):
+def get_valid_image_size(image, width, height, scale, apply_aspect_ratio=True):
     aspect_ratio_height = int(round(image.size[1] / image.size[0] * width))
+    if scale is not None:
+        return image.size, scale
+    scale = 1
     if width and height is None:
         height = aspect_ratio_height
     elif height and width is None:
@@ -62,21 +65,13 @@ def get_valid_image_size(image, width, height, apply_aspect_ratio=True):
             apply_aspect_ratio = apply_aspect_ratio()
         if apply_aspect_ratio:
             height = aspect_ratio_height
-    return width, height
+    return width, height, scale
+
 
 
 def resize_image(image, args, apply_aspect_ratio=True):
     scale, width, height, img_path = args.scale, args.width, args.height, args.img_path
-    if scale is not None and (height or width):
-        raise argparse.ArgumentTypeError('The scale x{} was defined!.\n '
-                             'Resize with the width and height is not possible!'.format(scale))
-    if scale is None:
-        scale = 1
-        width, height = get_valid_image_size(
-            image, width, height, apply_aspect_ratio
-        )
-    else:
-        width, height = image.size
+    width, height, scale = get_valid_image_size(image, width, height, scale, apply_aspect_ratio)
     return image.resize((int(round(width*scale)), int(round(height * scale))))
 
 
@@ -114,6 +109,8 @@ if __name__ == '__main__':
               format(', '.join(img_formats)))
     elif (args.scale, args.width, args.height) == (None, None, None):
         print('For image resize you must enter values (-scale or -width or -height)')
+    elif args.scale is not None and (args.height or args.width):
+        print('The scale x{} was defined!.\n Resize with the width and height is not possible!'.format(args.scale))
     else:
         image = Image.open(args.img_path)
         new_image = resize_image(image, args, apply_aspect_ratio=apply_aspect_ratio_to_height_dialog)
