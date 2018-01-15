@@ -52,10 +52,15 @@ def check_output_path(output_path, img_formats_set):
 
 
 def get_valid_image_size(image, width, height, scale, apply_aspect_ratio=True):
-    aspect_ratio_height = int(round(image.size[1] / image.size[0] * width))
     if scale is not None:
         return image.size, scale
     scale = 1
+    width, height = get_valid_width_height(image, width, height, apply_aspect_ratio)
+    return width, height, scale
+
+
+def get_valid_width_height(image, width, height, apply_aspect_ratio):
+    aspect_ratio_height = int(round(image.size[1] / image.size[0] * width))
     if width and height is None:
         height = aspect_ratio_height
     elif height and width is None:
@@ -65,8 +70,7 @@ def get_valid_image_size(image, width, height, scale, apply_aspect_ratio=True):
             apply_aspect_ratio = apply_aspect_ratio()
         if apply_aspect_ratio:
             height = aspect_ratio_height
-    return width, height, scale
-
+    return width, height
 
 
 def resize_image(image, args, apply_aspect_ratio=True):
