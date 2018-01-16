@@ -7,11 +7,9 @@ import logging
 logging.basicConfig(level=logging.CRITICAL)
 
 
-def get_default_image_name(image, new_image):
-    width, height = new_image.size
-    file_extension = image.format.lower()
-    filename = os.path.basename(image.filename)
-    return '{}__{}x{}.{}'.format(os.path.splitext(filename)[0], width, height, file_extension)
+def get_default_image_name(width, height, filename):
+    filename, file_extension = os.path.splitext(filename)
+    return '{}__{}x{}{}'.format(os.path.splitext(filename)[0], width, height, file_extension)
 
 
 def check_file_extension(file_path, img_formats_set):
@@ -60,7 +58,7 @@ def get_valid_image_size(image, width, height, scale, apply_aspect_ratio=True):
 
 
 def get_valid_width_height(image, width, height, apply_aspect_ratio):
-    aspect_ratio_height = int(round(image.size[1] / image.size[0] * width))
+    aspect_ratio_height = int(round(image.size[1] / image.size[0] * width)) if width is not None else None
     if width and height is None:
         height = aspect_ratio_height
     elif height and width is None:
@@ -110,15 +108,15 @@ if __name__ == '__main__':
         image = Image.open(args.img_path)
         apply_aspect_ratio = apply_aspect_ratio_to_height_dialog
         width, height, scale = get_valid_image_size(image, args.width, args.height, args.scale, apply_aspect_ratio)
-        new_image = image.resize((int(round(width*scale)), int(round(height * scale))))
 
         if not args.output_path or os.path.isdir(args.output_path):
-            new_image_name = get_default_image_name(image, new_image)
+            new_image_name = get_default_image_name(width, height, image.filename)
             output_path = os.path.join(args.output_path, new_image_name)
         else:
             output_path = args.output_path
 
         try:
+            new_image = image.resize((int(round(width * scale)), int(round(height * scale))))
             new_image.save(output_path)
         except (IOError, ValueError, KeyError) as exc:
             print('{} File {} could not be written.'.format(exc, args.output_path))
