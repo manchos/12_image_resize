@@ -73,26 +73,13 @@ def get_valid_width_height(image, width, height, apply_aspect_ratio):
     return width, height
 
 
-def resize_image(image, args, apply_aspect_ratio=True):
-    scale, width, height, img_path = args.scale, args.width, args.height, args.img_path
-    width, height, scale = get_valid_image_size(image, width, height, scale, apply_aspect_ratio)
-    return image.resize((int(round(width*scale)), int(round(height * scale))))
-
-
-def set_ouput_image_path(new_image_name, output_path):
-    if os.path.basename(output_path):
-        return output_path
-    else:
-        return os.path.join(os.path.dirname(image.filename), new_image_name)
-
-
 def check_valid_args(args):
     if (not os.path.isfile(args.img_path) or
             not check_file_extension(args.img_path, img_formats_set=img_formats) or
             not check_output_path(args.output_path, img_formats_set=img_formats)):
         print('Check the file path and file extension. Use files with the file extension:{}'.
               format(', '.join(img_formats)))
-    elif (args.scale, args.width, args.height) == (None, None, None):
+    elif not any((args.scale, args.width, args.height)):
         print('For image resize you must enter values (-scale or -width or -height)')
     elif args.scale is not None and (args.height or args.width):
         print('The scale x{} was defined!.\n Resize with the width and height is not possible!'.format(args.scale))
@@ -111,8 +98,7 @@ def parse_args():
                         help='set image height (integer>0)')
     parser.add_argument('-scale', '--scale', default=None, type=validate_scale, dest="scale",
                         help='set image scale (fractional number > 0)')
-    parser.add_argument(
-        '-output', '--output', default='', dest="output_path", help='set image path to save')
+    parser.add_argument('-output', '--output', default='', dest="output_path", help='set image path to save')
     return parser.parse_args()
 
 
@@ -122,12 +108,18 @@ if __name__ == '__main__':
 
     if check_valid_args(args):
         image = Image.open(args.img_path)
-        new_image = resize_image(image, args, apply_aspect_ratio=apply_aspect_ratio_to_height_dialog)
-        try:
+        apply_aspect_ratio = apply_aspect_ratio_to_height_dialog
+        width, height, scale = get_valid_image_size(image, args.width, args.height, args.scale, apply_aspect_ratio)
+        new_image = image.resize((int(round(width*scale)), int(round(height * scale))))
+
+        if not args.output_path or os.path.isdir(args.output_path):
             new_image_name = get_default_image_name(image, new_image)
-            output_path = set_ouput_image_path(new_image_name, args.output_path)
+            output_path = os.path.join(args.output_path, new_image_name)
+        else:
+            output_path = args.output_path
+
+        try:
             new_image.save(output_path)
         except (IOError, ValueError, KeyError) as exc:
             print('{} File {} could not be written.'.format(exc, args.output_path))
-        else:
-            print('file save in {} '.format(output_path))
+        print('file save in {} '.format(output_path))
