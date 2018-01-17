@@ -19,8 +19,8 @@ def check_file_extension(file_path, img_formats_set):
 
 
 def apply_aspect_ratio_to_height_dialog():
-    enter_height = input('The height does not match to the aspect ratio. '
-                         'To enter this value? (yes, no)')
+    enter_height = input('The height does not match to the aspect ratio.\
+     To enter this value? (yes, no)')
     if enter_height in ('', 'yes'):
         return False
     elif enter_height == 'no':
@@ -58,7 +58,8 @@ def get_image_size(image, width, height, scale, apply_aspect_ratio=True):
 
 
 def get_width_height(image, width, height, apply_aspect_ratio):
-    aspect_ratio_height = int(round(image.size[1] / image.size[0] * width)) if width is not None else None
+    aspect_ratio_height = int(round(image.size[1] / image.size[0] * width)) \
+        if width is not None else None
     if any(width, height) and height != aspect_ratio_height:
         if callable(apply_aspect_ratio):
             apply_aspect_ratio = apply_aspect_ratio()
@@ -80,7 +81,8 @@ def check_valid_args(args):
     elif not any((args.scale, args.width, args.height)):
         print('For image resize you must enter values (-scale or -width or -height)')
     elif args.scale is not None and (args.height or args.width):
-        print('The scale x{} was defined!.\n Resize with the width and height is not possible!'.format(args.scale))
+        print('The scale x{} was defined!.\
+              \n Resize with the width and height is not possible!'.format(args.scale))
     else:
         return True
 
@@ -96,7 +98,8 @@ def parse_args():
                         help='set image height (integer>0)')
     parser.add_argument('-scale', '--scale', default=None, type=validate_scale, dest="scale",
                         help='set image scale (fractional number > 0)')
-    parser.add_argument('-output', '--output', default='', dest="output_path", help='set image path to save')
+    parser.add_argument('-output', '--output', default='', dest="output_path",
+                        help='set image path to save')
     return parser.parse_args()
 
 
@@ -107,7 +110,8 @@ if __name__ == '__main__':
     if check_valid_args(args):
         image = Image.open(args.img_path)
         apply_aspect_ratio = apply_aspect_ratio_to_height_dialog
-        (width, height), scale = get_image_size(image, args.width, args.height, args.scale, apply_aspect_ratio)
+        (width, height), scale = get_image_size(image, args.width, args.height, args.scale,
+                                                apply_aspect_ratio)
 
         if os.path.isfile(args.output_path):
             output_path = args.output_path
