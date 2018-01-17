@@ -8,8 +8,8 @@ logging.basicConfig(level=logging.CRITICAL)
 
 
 def get_default_image_name(width, height, filename):
-    filename, file_extension = os.path.splitext(filename)
-    return '{}__{}x{}{}'.format(os.path.splitext(filename)[0], width, height, file_extension)
+    filename_without_ext, file_extension = os.path.splitext(filename)
+    return '{}__{}x{}{}'.format(filename_without_ext, width, height, file_extension)
 
 
 def check_file_extension(file_path, img_formats_set):
@@ -49,25 +49,25 @@ def check_output_path(output_path, img_formats_set):
     return True
 
 
-def get_valid_image_size(image, width, height, scale, apply_aspect_ratio=True):
+def get_image_size(image, width, height, scale, apply_aspect_ratio=True):
     if scale is not None:
         return image.size, scale
     scale = 1
-    width, height = get_valid_width_height(image, width, height, apply_aspect_ratio)
+    width, height = get_width_height(image, width, height, apply_aspect_ratio)
     return width, height, scale
 
 
-def get_valid_width_height(image, width, height, apply_aspect_ratio):
+def get_width_height(image, width, height, apply_aspect_ratio):
     aspect_ratio_height = int(round(image.size[1] / image.size[0] * width)) if width is not None else None
-    if width and height is None:
-        height = aspect_ratio_height
-    elif height and width is None:
-        width = int(round(image.size[0] / image.size[1] * height))
-    elif height != aspect_ratio_height:
+    if any(width, height) and height != aspect_ratio_height:
         if callable(apply_aspect_ratio):
             apply_aspect_ratio = apply_aspect_ratio()
         if apply_aspect_ratio:
             height = aspect_ratio_height
+    elif height is None:
+        height = aspect_ratio_height
+    elif width is None:
+        width = int(round(image.size[0] / image.size[1] * height))
     return width, height
 
 
@@ -107,17 +107,19 @@ if __name__ == '__main__':
     if check_valid_args(args):
         image = Image.open(args.img_path)
         apply_aspect_ratio = apply_aspect_ratio_to_height_dialog
-        width, height, scale = get_valid_image_size(image, args.width, args.height, args.scale, apply_aspect_ratio)
+        (width, height), scale = get_image_size(image, args.width, args.height, args.scale, apply_aspect_ratio)
 
-        if not args.output_path or os.path.isdir(args.output_path):
-            new_image_name = get_default_image_name(width, height, image.filename)
-            output_path = os.path.join(args.output_path, new_image_name)
-        else:
+        if os.path.isfile(args.output_path):
             output_path = args.output_path
+        else:
+            new_image_name = get_default_image_name(width, height, os.path.basename(image.filename))
+            output_dir = os.path.dirname(image.filename) if not args.output_path else args.output_path
+            output_path = os.path.join(output_dir, new_image_name)
 
         try:
             new_image = image.resize((int(round(width * scale)), int(round(height * scale))))
             new_image.save(output_path)
         except (IOError, ValueError, KeyError) as exc:
             print('{} File {} could not be written.'.format(exc, args.output_path))
-        print('file save in {} '.format(output_path))
+        else:
+            print('file save in {} '.format(output_path))
