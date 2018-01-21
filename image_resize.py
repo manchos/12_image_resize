@@ -61,11 +61,12 @@ def get_new_image_size(image, width, height, scale, apply_aspect_ratio=True):
     aspect_ratio_height = int(round(image.size[1] / image.size[0] * width))
     if height is None:
         height = aspect_ratio_height
-    elif height != aspect_ratio_height:
-        if callable(apply_aspect_ratio):
-            apply_aspect_ratio = apply_aspect_ratio()
-        if apply_aspect_ratio:
-            height = aspect_ratio_height
+    else:
+        height = (aspect_ratio_height
+                  if (height != aspect_ratio_height and
+                      (apply_aspect_ratio() if callable(apply_aspect_ratio) else
+                       apply_aspect_ratio))
+                  else height)
     return width, height, scale
 
 
