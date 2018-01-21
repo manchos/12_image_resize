@@ -52,23 +52,20 @@ def check_output_path(output_path, img_formats_set):
     return True
 
 
-def get_aspect_ratio_height(image, new_width, apply_aspect_ratio=True):
-    if callable(apply_aspect_ratio):
-        apply_aspect_ratio = apply_aspect_ratio()
-    if apply_aspect_ratio:
-        return int(round(image.size[1] / image.size[0] * new_width))
-
-
 def get_new_image_size(image, width, height, scale, apply_aspect_ratio=True):
     if scale is not None:
         return image.size[0], image.size[1], scale
     scale = 1
     if width is None:
         width = int(round(image.size[0] / image.size[1] * height))
-    elif height is None:
-        height = get_aspect_ratio_height(image, width)
-    elif height != int(round(image.size[1] / image.size[0] * width)):
-        height = get_aspect_ratio_height(image, width, apply_aspect_ratio)
+    aspect_ratio_height = int(round(image.size[1] / image.size[0] * width))
+    if height is None:
+        height = aspect_ratio_height
+    elif height != aspect_ratio_height:
+        if callable(apply_aspect_ratio):
+            apply_aspect_ratio = apply_aspect_ratio()
+        if apply_aspect_ratio:
+            height = aspect_ratio_height
     return width, height, scale
 
 
