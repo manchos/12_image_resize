@@ -52,7 +52,7 @@ def check_output_path(output_path, img_formats_set):
     return True
 
 
-def get_new_image_size(image, width, height, scale, apply_aspect_ratio=True):
+def get_new_image_size(image, width, height, scale, aspect_ratio=True):
     if scale is not None:
         return image.size[0], image.size[1], scale
     scale = 1
@@ -64,10 +64,13 @@ def get_new_image_size(image, width, height, scale, apply_aspect_ratio=True):
     else:
         height = (aspect_ratio_height
                   if (height != aspect_ratio_height and
-                      (apply_aspect_ratio() if callable(apply_aspect_ratio) else
-                       apply_aspect_ratio))
+                      apply_condition(aspect_ratio))
                   else height)
     return width, height, scale
+
+
+def apply_condition(condition):
+    return condition() if callable(condition) else condition
 
 
 def check_valid_args(args):
