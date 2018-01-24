@@ -9,8 +9,12 @@ logging.basicConfig(level=logging.CRITICAL)
 
 def get_new_image_name(width, height, filename):
     filename_without_ext, file_extension = os.path.splitext(filename)
-    return '{}__{}x{}{}'.format(filename_without_ext, width,
-                                height, file_extension)
+    return '{}__{}x{}{}'.format(
+        filename_without_ext,
+        width,
+        height,
+        file_extension
+    )
 
 
 def check_file_extension(file_path, img_formats_set):
@@ -100,17 +104,33 @@ def parse_args():
                      'file name obtain from IMAGE_PATH like this: '
                      'FILE_NAME__WIDTHxHEIGHT.FILE_EXTENSION'))
     parser.add_argument('img_path', help='set path to image file to resize')
-    parser.add_argument('-width', '--width', default=None,
-                        type=validate_size, dest="width",
-                        help='set image width (integer>0)')
-    parser.add_argument('-height', '--height', default=None,
-                        type=validate_size, dest="height",
-                        help='set image height (integer>0)')
-    parser.add_argument('-scale', '--scale', default=None,
-                        type=validate_scale, dest="scale",
-                        help='set image scale (fractional number > 0)')
-    parser.add_argument('-output', '--output', default='', dest="output_path",
-                        help='set image path to save')
+    parser.add_argument(
+        '-width', '--width',
+        default=None,
+        type=validate_size,
+        dest="width",
+        help='set image width (integer>0)'
+    )
+    parser.add_argument(
+        '-height', '--height',
+        default=None,
+        type=validate_size,
+        dest="height",
+        help='set image height (integer>0)'
+    )
+    parser.add_argument(
+        '-scale', '--scale',
+        default=None,
+        type=validate_scale,
+        dest="scale",
+        help='set image scale (fractional number > 0)'
+    )
+    parser.add_argument(
+        '-output', '--output',
+        default='',
+        dest="output_path",
+        help='set image path to save'
+    )
     return parser.parse_args()
 
 
